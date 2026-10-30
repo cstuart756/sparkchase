@@ -2,15 +2,33 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { supabaseServer } from "./supabase/server";
 import type { User } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 /** Upsert a profile row for a freshly-created auth user. */
-async function ensureProfile(id: string, email: string): Promise<User> {
+async function ensureProfile(id: string, email: string, companyName?: string): Promise<User> {
   const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
-  return db.user.upsert({
-    where: { id },
-    update: {},
-    create: { id, email, trialEndsAt, subscriptionStatus: "trialing", smsCredits: 100 },
-  });
+  
+  try {
+    return await db.user.upsert({
+      where: { id },
+      update: {},
+      create: { 
+        id, 
+        email, 
+        companyName: companyName || null,
+        trialEndsAt, 
+        subscriptionStatus: "trialing", 
+        smsCredits: 100 
+      },
+    });
+  } catch (error) {
+    // Catch the race condition if two requests try to create the profile at the same time
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const user = await db.user.findUnique({ where: { id } });
+      if (user) return user;
+    }
+    throw error;
+  }
 }
 
 /** Server components / actions: redirect unauthenticated users. */
@@ -18,7 +36,7 @@ export async function requireUser(): Promise<User> {
   const sb = supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user?.email) redirect("/login");
-  return ensureProfile(user.id, user.email);
+  return ensureProfile(user.id, user.email, user.user_metadata?.company_name);
 }
 
 /** Route handlers: return null instead of redirecting. */
@@ -26,7 +44,7 @@ export async function getUserOrNull(): Promise<User | null> {
   const sb = supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user?.email) return null;
-  return ensureProfile(user.id, user.email);
+  return ensureProfile(user.id, user.email, user.user_metadata?.company_name);
 }
 
 /**
