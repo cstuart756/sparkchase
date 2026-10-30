@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Profile row. id === supabase auth.users.id
+model User {
+  id                   String    @id
+  email                String    @unique
+  companyName          String?
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  plan                 String    @default("starter") // starter | pro
+  subscriptionStatus   String    @default("trialing") // trialing | active | past_due | canceled
+  trialEndsAt          DateTime?
+  smsCredits           Int       @default(100)
+  smsOverageCount      Int       @default(0)
+  jobs                 Job[]
+  templates            Template[]
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([stripeCustomerId])
+}
+
+model Job {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  jobReference  String
+  totalValue    Decimal       @db.Decimal(10, 2)
+  paymentTerms  String        // "Net 30"
+  milestones    Milestone[]
+  certificates  Certificate[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@unique([userId, jobReference])
+}
+
+model Milestone {
+  id             String       @id @default(cuid())
+  jobId          String
+  job            Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name           String
+  amount         Decimal      @db.Decimal(10, 2)
+  dueDate        DateTime?    // date-triggered only
+  triggerType    String       // "date" | "certificate"
+  certificateId  String?
+  certificate    Certificate? @relation(fields: [certificateId], references: [id])
+  status         String       @default("pending") // pending | invoiced | paid | overdue
+  anchorDate     DateTime?    // set when sequence starts (cert issue date, or dueDate)
+  invoicedAt     DateTime?
+  reminderOffsets Int[]       @default([0, 3, 7, 14])
+  emailEnabled   Boolean      @default(true)
+  smsEnabled     Boolean      @default(false)
+  reminders      Reminder[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([jobId])
+  @@index([status])
+}
+
+model Certificate {
+  id                String      @id @default(cuid())
+  jobId             String
+  job               Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  type              String      // EICR | EIC | Minor Works | ...
+  certificateNumber String
+  issueDate         DateTime?
+  isIssued          Boolean     @default(false)
+  milestones        Milestone[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([jobId])
+}
+
+model Reminder {
+  id             String    @id @default(cuid())
+  milestoneId    String
+  milestone      Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  channel        String    // "sms" | "email"
+  toAddress      String?   // masked in logs
+  sentAt         DateTime  @default(now())
+  status         String    // sent | delivered | failed | skipped | skipped_no_credits
+  messageBody    String
+  sequenceOffset Int?      // null = manual one-off
+  createdAt      DateTime  @default(now())
+
+  @@index([milestoneId, sequenceOffset])
+}
+
+model Template {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  channel   String   // "sms" | "email"
+  subject   String?
+  body      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
