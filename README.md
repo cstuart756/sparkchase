@@ -1,8 +1,8 @@
+**[Live app](https://whispering-lake-12712-443b4118fd80.herokuapp.com/)**
+
 # ⚡ SparkChase
 
 **Invoice chasing for electricians, built around stage payments, retentions, and certification-triggered billing.**
-
-**Live app:** [SparkChase](https://whispering-lake-12712-443b4118fd80.herokuapp.com/)
 
 Generic invoicing tools ignore the specific friction points of electrical subcontracting. SparkChase solves this by understanding that you often can't invoice for "Testing & Certification" until the certificate is actually issued. 
 
