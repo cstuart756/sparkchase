@@ -2,6 +2,8 @@
 
 **Invoice chasing for electricians, built around stage payments, retentions, and certification-triggered billing.**
 
+**Live app:** [SparkChase](https://whispering-lake-12712-443b4118fd80.herokuapp.com/)
+
 Generic invoicing tools ignore the specific friction points of electrical subcontracting. SparkChase solves this by understanding that you often can't invoice for "Testing & Certification" until the certificate is actually issued. 
 
 > **"Stop chasing stage payments and retentions manually. SparkChase sends the right reminder at the right milestone, referencing the certificate you issued, so you get paid faster."**
@@ -26,7 +28,7 @@ Generic invoicing tools ignore the specific friction points of electrical subcon
 - **Email:** Resend
 - **SMS:** Twilio
 - **Payments:** Stripe (Checkout + Customer Portal + Webhooks)
-- **Cron:** Vercel Cron (or any standard cron runner)
+- **Cron:** External cron runner for daily reminders
 
 ## 📋 Prerequisites
 
@@ -105,52 +107,32 @@ TWILIO_ACCOUNT_SID	Twilio Account SID
 TWILIO_AUTH_TOKEN	Twilio Auth Token
 TWILIO_FROM_NUMBER	Your Twilio phone number
 CRON_SECRET	A secure random string to protect the cron route
-☁️ Deployment (Vercel)
+## ☁️ Deployment (Heroku)
 
-    Push your code to GitHub.
+The production app runs in Heroku's EU region: [whispering-lake-12712](https://whispering-lake-12712-443b4118fd80.herokuapp.com/).
 
-    Import the repository into Vercel.
+To deploy updates, push the `master` branch to the Heroku remote:
 
-    Add all the environment variables from your .env file to Vercel.
+```bash
+heroku git:remote --app whispering-lake-12712
+git push heroku master
+```
 
-    Change NEXT_PUBLIC_APP_URL in Vercel to your production URL (e.g., https://sparkchase.vercel.app).
+Set the environment variables listed above as Heroku config vars, and set `NEXT_PUBLIC_APP_URL` to the live app URL. Email, SMS, and Stripe webhook integrations also require their respective provider credentials.
 
-    Deploy!
+The daily reminder endpoint is `GET /api/cron/send-reminders`. Schedule it with an external cron service to run daily, sending `Authorization: Bearer <CRON_SECRET>`.
 
-Setting up the Cron Job
+### Stripe Webhooks (Production)
 
-SparkChase uses a daily cron job to check for due reminders. Create a vercel.json file in the root of your project:
-json
+Configure a Stripe webhook endpoint at `https://whispering-lake-12712-443b4118fd80.herokuapp.com/api/stripe/webhook` for these events:
 
-{
-  "crons": [
-    {
-      "path": "/api/cron/send-reminders",
-      "schedule": "0 9 * * *"
-    }
-  ]
-}
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_failed`
+- `invoice.paid`
 
-Vercel will automatically hit /api/cron/send-reminders every day at 09:00 UTC and securely pass your CRON_SECRET as a Bearer token.
-Stripe Webhooks (Production)
-
-    Go to your Stripe Dashboard → Developers → Webhooks.
-
-    Add an endpoint pointing to https://your-domain.com/api/stripe/webhook.
-
-    Select the following events:
-
-        checkout.session.completed
-
-        customer.subscription.updated
-
-        customer.subscription.deleted
-
-        invoice.payment_failed
-
-        invoice.paid
-
-    Copy the signing secret (whsec_...) and add it to your Vercel environment variables as STRIPE_WEBHOOK_SECRET.
+Add the webhook signing secret as the Heroku config var `STRIPE_WEBHOOK_SECRET`.
 
 📄 License
 

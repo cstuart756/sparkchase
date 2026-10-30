@@ -1,5 +1,3 @@
-import { parsePaymentTerms } from "./format";
-
 export const DEFAULT_OFFSETS = [0, 3, 7, 14];
 
 export interface MilestoneForSchedule {

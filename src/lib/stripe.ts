@@ -1,7 +1,12 @@
 import Stripe from "stripe";
 
 export const stripe = process.env.STRIPE_SECRET_KEY 
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-06-20", typescript: true })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      // Keep the existing API version; Stripe's types only model its latest version.
+      // @ts-expect-error Stripe explicitly permits older API versions at runtime.
+      apiVersion: "2024-06-20",
+      typescript: true,
+    })
   : (null as unknown as Stripe); // Fallback for local dev without keys
 
 export const PLANS = {
