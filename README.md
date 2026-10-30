@@ -1,4 +1,4 @@
-**[Live app](https://whispering-lake-12712-443b4118fd80.herokuapp.com/)**
+**[Live app](https://sparkchase-eu-19da17995ae8.herokuapp.com/)**
 
 # ⚡ SparkChase
 
@@ -109,12 +109,12 @@ TWILIO_FROM_NUMBER	Your Twilio phone number
 CRON_SECRET	A secure random string to protect the cron route
 ## ☁️ Deployment (Heroku)
 
-The production app runs in Heroku's EU region: [whispering-lake-12712](https://whispering-lake-12712-443b4118fd80.herokuapp.com/).
+The production app runs in Heroku's EU region: [sparkchase-eu](https://sparkchase-eu-19da17995ae8.herokuapp.com/).
 
 To deploy updates, push the `master` branch to the Heroku remote:
 
 ```bash
-heroku git:remote --app whispering-lake-12712
+heroku git:remote --app sparkchase-eu
 git push heroku master
 ```
 
@@ -124,7 +124,7 @@ The daily reminder endpoint is `GET /api/cron/send-reminders`. Schedule it with 
 
 ### Stripe Webhooks (Production)
 
-Configure a Stripe webhook endpoint at `https://whispering-lake-12712-443b4118fd80.herokuapp.com/api/stripe/webhook` for these events:
+Configure a Stripe webhook endpoint at `https://sparkchase-eu-19da17995ae8.herokuapp.com/api/stripe/webhook` for these events:
 
 - `checkout.session.completed`
 - `customer.subscription.updated`
